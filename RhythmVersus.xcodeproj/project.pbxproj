@@ -133,6 +133,9 @@
 		DD872E591849D4F5007CFA67 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E581849D4F5007CFA67 /* AppDelegate.m */; };
 		DD872E5C1849D4F5007CFA67 /* HelloWorldLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E5B1849D4F5007CFA67 /* HelloWorldLayer.m */; };
 		DD872E5F1849D4F5007CFA67 /* IntroLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E5E1849D4F5007CFA67 /* IntroLayer.m */; };
+		DDC307D3185FF67900387A05 /* rhythmversus.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D2185FF67900387A05 /* rhythmversus.png */; };
+		DDC307D618635A1F00387A05 /* rvTimeFrame.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D418635A1E00387A05 /* rvTimeFrame.png */; };
+		DDC307D718635A1F00387A05 /* rvTimeGauge.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D518635A1E00387A05 /* rvTimeGauge.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -398,6 +401,9 @@
 		DD872E5B1849D4F5007CFA67 /* HelloWorldLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorldLayer.m; sourceTree = "<group>"; };
 		DD872E5D1849D4F5007CFA67 /* IntroLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IntroLayer.h; sourceTree = "<group>"; };
 		DD872E5E1849D4F5007CFA67 /* IntroLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IntroLayer.m; sourceTree = "<group>"; };
+		DDC307D2185FF67900387A05 /* rhythmversus.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rhythmversus.png; path = Resources/rhythmversus.png; sourceTree = "<group>"; };
+		DDC307D418635A1E00387A05 /* rvTimeFrame.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvTimeFrame.png; path = Resources/rvTimeFrame.png; sourceTree = "<group>"; };
+		DDC307D518635A1E00387A05 /* rvTimeGauge.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvTimeGauge.png; path = Resources/rvTimeGauge.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -472,6 +478,9 @@
 		DD872CE01849D4F3007CFA67 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				DDC307D418635A1E00387A05 /* rvTimeFrame.png */,
+				DDC307D518635A1E00387A05 /* rvTimeGauge.png */,
+				DDC307D2185FF67900387A05 /* rhythmversus.png */,
 				DD872CE11849D4F3007CFA67 /* Default.png */,
 				DD872CE31849D4F3007CFA67 /* Default-Landscape~ipad.png */,
 				DD872CE51849D4F3007CFA67 /* fps_images.png */,
@@ -859,6 +868,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0500;
+				TargetAttributes = {
+					DD872CC91849D4F3007CFA67 = {
+						DevelopmentTeam = RU73PJNBZ2;
+					};
+				};
 			};
 			buildConfigurationList = DD872CC51849D4F3007CFA67 /* Build configuration list for PBXProject "RhythmVersus" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -884,11 +898,14 @@
 			files = (
 				DD872CF01849D4F3007CFA67 /* Icon-Small.png in Resources */,
 				DD872CE41849D4F3007CFA67 /* Default-Landscape~ipad.png in Resources */,
+				DDC307D718635A1F00387A05 /* rvTimeGauge.png in Resources */,
 				DD872CF41849D4F3007CFA67 /* Icon.png in Resources */,
 				DD872CEE1849D4F3007CFA67 /* Icon-Small-50.png in Resources */,
 				DD872CF21849D4F3007CFA67 /* Icon-Small@2x.png in Resources */,
+				DDC307D3185FF67900387A05 /* rhythmversus.png in Resources */,
 				DD872CF61849D4F3007CFA67 /* Icon@2x.png in Resources */,
 				DD872CE21849D4F3007CFA67 /* Default.png in Resources */,
+				DDC307D618635A1F00387A05 /* rvTimeFrame.png in Resources */,
 				DD872CF91849D4F3007CFA67 /* iTunesArtwork in Resources */,
 				DD872E371849D4F5007CFA67 /* ChangeLog in Resources */,
 				DD872CEA1849D4F3007CFA67 /* fps_images-ipadhd.png in Resources */,
@@ -1059,6 +1076,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1070,6 +1089,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1078,6 +1098,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = RhythmVersus/Prefix.pch;
@@ -1088,6 +1110,7 @@
 					"-ObjC",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
@@ -1112,6 +1135,7 @@
 				DD872E641849D4F5007CFA67 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
