@@ -12,8 +12,11 @@
 
 // Needed to obtain the Navigation Controller
 #import "AppDelegate.h"
+#import "ShootBullet.h"
 
 #pragma mark - HelloWorldLayer
+
+#define INTERVAL_TIME 0
 
 // HelloWorldLayer implementation
 @implementation HelloWorldLayer
@@ -48,6 +51,8 @@
         match_callback = [[MatchCallback alloc] init];
         updateSec = 0;
         phase = 0;
+        bullets = [[NSMutableArray alloc] init];
+        life = 100;
         
 		// ask director for the window size
 		CGSize size = [[CCDirector sharedDirector] winSize];
@@ -55,18 +60,30 @@
         gameLayer = [CCLayer node];
         AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
         float scale = (size.width / 768.f);
-//        if(appCtrler.isRetina)
-//            scale = scale * 2;
         [gameLayer setScale:scale];
         [self addChild:gameLayer];
 
+        CCSprite* lifeFrame = [CCSprite spriteWithFile:@"rvTimeFrame.png"];
+        CGRect lfTexRect = lifeFrame.textureRect;
+        CGPoint lfPosition = ccp(size.width/2, size.height-lfTexRect.size.height);
+        [lifeFrame setPosition:lfPosition];
+        [self addChild:lifeFrame];
+
+        lifeGauge = [CCSprite spriteWithFile:@"rvLifeGauge.png"];
+        lfPosition.x -= lfTexRect.size.width/2;
+        [lifeGauge setPosition:lfPosition];
+        [lifeGauge setAnchorPoint:ccp(0,0.5f)];
+        [self addChild:lifeGauge];
+
         CCSprite* timeFrame = [CCSprite spriteWithFile:@"rvTimeFrame.png"];
-        [timeFrame setPosition:ccp(size.width/2, size.height-64)];
+        CGRect tfTexRect = timeFrame.textureRect;
+        CGPoint tfPosition = ccp(size.width/2, size.height-tfTexRect.size.height*2.25f);
+        [timeFrame setPosition:tfPosition];
         [self addChild:timeFrame];
 
         timeGauge = [CCSprite spriteWithFile:@"rvTimeGauge.png"];
-        CGRect tgTexRect = timeGauge.textureRect;
-        [timeGauge setPosition:ccp(size.width/2 - tgTexRect.size.width/2, size.height-64)];
+        tfPosition.x -= tfTexRect.size.width/2;
+        [timeGauge setPosition:tfPosition];
         [timeGauge setAnchorPoint:ccp(0,0.5f)];
         [self addChild:timeGauge];
 
@@ -166,11 +183,17 @@
 
 - (void) update:(float)deltaTime
 {
-    if(currentMatch == nil) {
-        phase = 0;
-        myState = 0;
-        vsState = 0;
-        return;
+    for(ShootBullet* bullet in bullets) {
+        if([bullet update:updateSec]) {
+            life -= 10;
+            if(life < 0)
+                life = 100;
+            float rate = (life / 100.f);
+            CGRect rect = lifeGauge.textureRect;
+            CGSize size = lifeGauge.texture.contentSize;
+            rect.size.width = size.width * rate;
+            [lifeGauge setTextureRect:rect];
+        }
     }
 
     if(phase == 0) {
@@ -181,6 +204,8 @@
         else {
             phase++;
             sendData.tableSize = 0;
+            recieveData.tableSize = 0;
+            shootSec = INTERVAL_TIME;
             updateSec = 0;
         }
         updateSec += deltaTime;
@@ -200,15 +225,24 @@
             sendData.state = myState;
             [self sendDataToAllPlayers: &sendData sizeInBytes:sizeof(SendData)];
 
+            for(ShootBullet* bullet in bullets)
+                [bullet destroy];
+            [bullets removeAllObjects];
             [iconLayer removeAllChildrenWithCleanup:YES];
+            
             [stateLabel setString: [NSString stringWithFormat:@"myState %d\nvsState %d", myState, vsState]];
 
             updateSec = 0;
         }
         updateSec += deltaTime;
+        shootSec -= deltaTime;
     }
     else if(phase == 2) {
-        if(match_callback.recieveTouched) {
+        if(currentMatch == nil) {
+            vsState = recieveData.state;
+            phase++;
+        }
+        else if(match_callback.recieveTouched) {
             match_callback.recieveTouched = NO;
             recieveData = match_callback.recieveData;
             vsState = recieveData.state;
@@ -236,19 +270,15 @@
             [timeGauge setTextureRect:rect];
 
             while(recieveTouchIndex < recieveData.tableSize) {
-                if(updateSec > recieveData.touches[recieveTouchIndex].sec) {
-                    CCSprite* sprite = [CCSprite spriteWithFile:@"Icon-72.png"];
+                if(updateSec >= recieveData.touches[recieveTouchIndex].sec - 2) {
                     AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
                     float scale = 768;
-                    if(appCtrler.isRetina)
-                        [sprite setScale:2];
                     CGSize winSize = [[CCDirector sharedDirector] winSize];
                     CGPoint position = ccp(recieveData.touches[recieveTouchIndex].x, recieveData.touches[recieveTouchIndex].y);
                     position.x = winSize.width / 2 + position.x * scale;
                     position.y = winSize.height / 2 + position.y * scale;
 
-                    [sprite setPosition:position];
-                    [iconLayer addChild:sprite];
+                    [bullets addObject:[[ShootBullet alloc] initWithParamRecieve:recieveData.touches[recieveTouchIndex].sec touchPoint:position iconLayer:iconLayer]];
                     recieveTouchIndex++;
                 }
                 else {
@@ -257,6 +287,9 @@
             }
         }
         else {
+            for(ShootBullet* bullet in bullets)
+                [bullet destroy];
+            [bullets removeAllObjects];
             [iconLayer removeAllChildrenWithCleanup:YES];
             phase = 0;
             updateSec = 0;
@@ -264,42 +297,73 @@
         updateSec += deltaTime;
     }
 }
-
+/*
 -(void) registerWithTouchDispatcher
 {
     CCDirector *director = [CCDirector sharedDirector];
     [[director touchDispatcher] addTargetedDelegate:self priority:0 swallowsTouches:YES];
 }
-
+*/
 -(BOOL) ccTouchBegan:(UITouch *)touch withEvent:(UIEvent *)event
 {
-    CGSize winSize = [[CCDirector sharedDirector] winSize];
-    CGPoint touchPoint = [touch locationInView:[touch view]];
+    return YES;
+}
 
-    if(phase == 1) {
+-(void) ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    CGSize winSize = [[CCDirector sharedDirector] winSize];
+
+    bool touched = false;
+    for (UITouch *touch in touches) {
+        CGPoint touchPoint = [touch locationInView:[touch view]];
+        CGPoint screenPoint;
         touchPoint.x = (touchPoint.x - (winSize.width / 2)) / winSize.width;
         touchPoint.y = ((winSize.height / 2) - touchPoint.y) / winSize.width;
+
+        BOOL valid = NO;
         if(touchPoint.x < 0.5f && touchPoint.x > -0.5f 
         && touchPoint.y < 0.5f && touchPoint.y > -0.5f )
         {
-            AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
-
-            CCSprite* sprite = [CCSprite spriteWithFile:@"Icon-72.png"];
             float scale = 768;
-            if(appCtrler.isRetina)
-                [sprite setScale:2];
-            CGPoint position = ccp(touchPoint.x, touchPoint.y);
-            position.x = winSize.width / 2 + position.x * scale;
-            position.y = winSize.height / 2 + position.y * scale;
-            [sprite setPosition:position];
-            [iconLayer addChild:sprite];
+            screenPoint.x = winSize.width / 2 + touchPoint.x * scale;
+            screenPoint.y = winSize.height / 2 + touchPoint.y * scale;
+            valid = YES;
+        }
 
-            SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec};
-            sendData.touches[sendData.tableSize] = sendTouch;
-            sendData.tableSize++;
+        if(phase == 1) {
+            if(valid && shootSec < 0) {
+                CCSprite* sprite = [CCSprite spriteWithFile:@"Icon-72.png"];
+                AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
+                if(appCtrler.isRetina)
+                    [sprite setScale:2];
+                [sprite setPosition:screenPoint];
+//                [iconLayer addChild:sprite];
+
+                SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec};
+                sendData.touches[sendData.tableSize] = sendTouch;
+                sendData.tableSize++;
+
+                [bullets addObject:[[ShootBullet alloc] initWithParamSend:updateSec touchPoint:screenPoint iconLayer:iconLayer]];
+                recieveTouchIndex++;
+
+                if(currentMatch == nil) {
+                    recieveData.touches[recieveData.tableSize] = sendTouch;
+                    recieveData.tableSize++;
+                }
+                touched = true;
+            }
+        }
+        else if(phase == 4) {
+            if(valid) {
+                for(ShootBullet* bullet in bullets) {
+                    if([bullet touch:screenPoint])
+                        break;
+                }
+            }
         }
     }
-    return YES;
+    if(touched)
+        shootSec = INTERVAL_TIME;
 }
 
 #pragma mark GameKit delegate
@@ -391,6 +455,11 @@
         GKMatchRequest *request = [[[GKMatchRequest alloc] init] autorelease];
         request.minPlayers = 2;
         request.maxPlayers = 2;
+        life = 100;
+        CGRect rect = lifeGauge.textureRect;
+        CGSize size = lifeGauge.texture.contentSize;
+        rect.size.width = size.width;
+        [lifeGauge setTextureRect:rect];
         matchStarted = NO;
         [self showMatchmakerWithRequest:request];
     }
@@ -420,6 +489,7 @@
     if (!matchStarted && match.expectedPlayerCount == 0) {
         matchStarted = YES;
         // ゲーム開始の処理
+        phase = 0;
         myState = 0;
         vsState = 0;
     }

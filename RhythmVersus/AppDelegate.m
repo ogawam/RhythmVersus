@@ -30,6 +30,8 @@
 								 multiSampling:NO
 							   numberOfSamples:0];
 
+	[glView setMultipleTouchEnabled:YES];
+	
 	director_ = (CCDirectorIOS*) [CCDirector sharedDirector];
 
 	director_.wantsFullScreenLayout = YES;

@@ -54,16 +54,21 @@ typedef struct {
     BOOL matchStarted;
     CCLayer *iconLayer;
     CCLayer *gameLayer;
+    CCLayer *backLayer;
     CCLabelTTF *stateLabel;
     CCLabelTTF *countDown;
     CCSprite* timeGauge;
+    CCSprite* lifeGauge;
     int myState;
     int vsState;
     int phase;
+    int life;
     int recieveTouchIndex;
+    float shootSec;
     float updateSec;
     SendData sendData;
     SendData recieveData;
+    NSMutableArray *bullets;
 }
 
 // returns a CCScene that contains the HelloWorldLayer as the only child
