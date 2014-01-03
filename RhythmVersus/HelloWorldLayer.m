@@ -50,9 +50,13 @@
         matchStarted = NO;
         match_callback = [[MatchCallback alloc] init];
         updateSec = 0;
-        phase = 0;
-        bullets = [[NSMutableArray alloc] init];
+        offenceBullets = [[NSMutableArray alloc] init];
+        defenceBullets = [[NSMutableArray alloc] init];
         life = 100;
+
+        offenceCount = 0;
+
+        [self setState: GS_ModeSelect];
         
 		// ask director for the window size
 		CGSize size = [[CCDirector sharedDirector] winSize];
@@ -105,7 +109,7 @@
 		[CCMenuItemFont setFontSize:28];
 /*		
 		// Achievement Menu Item using blocks
-		CCMenuItem *itemAchievement = [CCMenuItemFont itemWithString:@"Achievements" block:^(id sender) {
+		CCMenuItem *itemAchievement = [CCMenuItemFont itemWithString:@"Achievements" block:^(id offenceer) {
 			
 			
 			GKAchievementViewController *achivementViewController = [[GKAchievementViewController alloc] init];
@@ -119,7 +123,7 @@
 		} ];
 
 		// Leaderboard Menu Item using blocks
-		CCMenuItem *itemLeaderboard = [CCMenuItemFont itemWithString:@"Leaderboard" block:^(id sender) {
+		CCMenuItem *itemLeaderboard = [CCMenuItemFont itemWithString:@"Leaderboard" block:^(id offenceer) {
 			
 			
 			GKLeaderboardViewController *leaderboardViewController = [[GKLeaderboardViewController alloc] init];
@@ -132,15 +136,15 @@
 			[leaderboardViewController release];
 		} ];
 */
-		CCMenuItem *itemLogin = [CCMenuItemFont itemWithString:@"Login" block:^(id sender) {
+		CCMenuItem *itemLogin = [CCMenuItemFont itemWithString:@"Login" block:^(id offenceer) {
             [self authenticateLocalPlayer];
         } ];
         
-		CCMenuItem *itemMatch = [CCMenuItemFont itemWithString:@"Match" block:^(id sender) {
+		CCMenuItem *itemMatch = [CCMenuItemFont itemWithString:@"Match" block:^(id offenceer) {
             [self requestMatch];
         } ];
     
-        CCMenuItem *itemClear = [CCMenuItemFont itemWithString:@"Clear" block:^(id sender) {
+        CCMenuItem *itemClear = [CCMenuItemFont itemWithString:@"Clear" block:^(id offenceer) {
             [iconLayer removeAllChildrenWithCleanup:YES];
         } ];
 		
@@ -183,8 +187,38 @@
 
 - (void) update:(float)deltaTime
 {
-    for(ShootBullet* bullet in bullets) {
-        if([bullet update:updateSec]) {
+    // 相手からの攻撃を受信する
+    if(match_callback.recieveTouched) {
+        match_callback.recieveTouched = NO;
+
+        for(int i = 0; i < match_callback.recieveData.tableSize; ++i)
+            defenceData.touches[i] = match_callback.recieveData.touches[i];
+        defenceData.tableSize += match_callback.recieveData.tableSize;
+
+        vsState = match_callback.recieveData.state;
+    }
+
+    // 相手からの攻撃を生成する
+    if(defenceData.tableSize > 0) {
+        while(defenceTouchIndex < defenceData.tableSize) {
+            if(defenceSec >= defenceData.touches[defenceTouchIndex].sec - 2) {
+                AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
+                float scale = 768;
+                CGSize winSize = [[CCDirector sharedDirector] winSize];
+                CGPoint position = ccp(defenceData.touches[defenceTouchIndex].x, defenceData.touches[defenceTouchIndex].y);
+                position.x = winSize.width / 2 + position.x * scale;
+                position.y = winSize.height / 2 + position.y * scale;
+
+                [defenceBullets addObject:[[ShootBullet alloc] initWithParamRecieve:defenceData.touches[defenceTouchIndex].sec touchPoint:position iconLayer:iconLayer]];
+                defenceTouchIndex++;
+            }
+            else break;
+        }
+    }
+
+    // 相手からの攻撃を更新する
+    for(ShootBullet* bullet in defenceBullets) {
+        if([bullet update:defenceSec]) {
             life -= 10;
             if(life < 0)
                 life = 100;
@@ -196,72 +230,32 @@
         }
     }
 
-    if(phase == 0) {
-        if(updateSec < 3) {
+    // 自分からの攻撃を更新する
+    for(ShootBullet* bullet in offenceBullets) {
+        [bullet update:offenceSec];
+    }
+
+    switch(state) {
+    case GS_GameStart: 
+        [self setState:GS_WaitForOffence];
+        break;
+
+    case GS_WaitForOffence:
+        if(updateSec < 0) {
             [countDown setScale:10 * (1-fmodf(updateSec, 1))];
             [countDown setString:[NSString stringWithFormat:@"%d", 3-(int)updateSec]];
         }
         else {
-            phase++;
-            sendData.tableSize = 0;
-            recieveData.tableSize = 0;
+            offenceData.tableSize = 0;
+            defenceData.tableSize = 0;
+            defenceTouchIndex = 0;
             shootSec = INTERVAL_TIME;
-            updateSec = 0;
+            offenceSec = 0;
+            [self setState:GS_Offence];
         }
-        updateSec += deltaTime;
-    }
-    else if(phase == 1) {
-        if(updateSec < 5) {
-            float rate = 1 - (updateSec / 5.f);
-            CGRect rect = timeGauge.textureRect;
-            CGSize size = timeGauge.texture.contentSize;
-            rect.size.width = size.width * rate;
-            [timeGauge setTextureRect:rect];
-        }
-        else {
-            phase++;
+        break;
 
-            myState++;
-            sendData.state = myState;
-            [self sendDataToAllPlayers: &sendData sizeInBytes:sizeof(SendData)];
-
-            for(ShootBullet* bullet in bullets)
-                [bullet destroy];
-            [bullets removeAllObjects];
-            [iconLayer removeAllChildrenWithCleanup:YES];
-            
-            [stateLabel setString: [NSString stringWithFormat:@"myState %d\nvsState %d", myState, vsState]];
-
-            updateSec = 0;
-        }
-        updateSec += deltaTime;
-        shootSec -= deltaTime;
-    }
-    else if(phase == 2) {
-        if(currentMatch == nil) {
-            vsState = recieveData.state;
-            phase++;
-        }
-        else if(match_callback.recieveTouched) {
-            match_callback.recieveTouched = NO;
-            recieveData = match_callback.recieveData;
-            vsState = recieveData.state;
-            phase++;
-        }
-    }
-    else if(phase == 3) {
-        if(updateSec < 3) {
-            [countDown setScale:10 * (1-fmodf(updateSec, 1))];
-            [countDown setString:[NSString stringWithFormat:@"%d", 3-(int)updateSec]];
-        }
-        else {
-            phase++;
-            recieveTouchIndex = 0;
-            updateSec = 0;
-        }
-        updateSec += deltaTime;
-    }
-    else if(phase == 4) {
+    case GS_Offence:
         if(updateSec < 5) {
             float rate = 1 - (updateSec / 5.f);
             CGRect rect = timeGauge.textureRect;
@@ -269,33 +263,73 @@
             rect.size.width = size.width * rate;
             [timeGauge setTextureRect:rect];
 
-            while(recieveTouchIndex < recieveData.tableSize) {
-                if(updateSec >= recieveData.touches[recieveTouchIndex].sec - 2) {
-                    AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
-                    float scale = 768;
-                    CGSize winSize = [[CCDirector sharedDirector] winSize];
-                    CGPoint position = ccp(recieveData.touches[recieveTouchIndex].x, recieveData.touches[recieveTouchIndex].y);
-                    position.x = winSize.width / 2 + position.x * scale;
-                    position.y = winSize.height / 2 + position.y * scale;
+            if(offenceCount < 1 && updateSec > 2.5f) {
+                defenceSec = -2.5f;
+               [defenceBullets removeAllObjects];
+                offenceCount++;
 
-                    [bullets addObject:[[ShootBullet alloc] initWithParamRecieve:recieveData.touches[recieveTouchIndex].sec touchPoint:position iconLayer:iconLayer]];
-                    recieveTouchIndex++;
+                if(currentMatch == nil) {
+                    for(int i = 0; i < offenceData.tableSize; ++i)
+                        defenceData.touches[defenceData.tableSize + i] = offenceData.touches[i];
+                    defenceData.tableSize += offenceData.tableSize;   
                 }
-                else {
-                    break;
-                }
+
+                [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
+                offenceData.tableSize = 0;
             }
         }
         else {
-            for(ShootBullet* bullet in bullets)
-                [bullet destroy];
-            [bullets removeAllObjects];
-            [iconLayer removeAllChildrenWithCleanup:YES];
-            phase = 0;
-            updateSec = 0;
+            defenceSec = 0;
+
+            if(currentMatch == nil) {
+                for(int i = 0; i < offenceData.tableSize; ++i)
+                    defenceData.touches[defenceData.tableSize + i] = offenceData.touches[i];
+                defenceData.tableSize += offenceData.tableSize;   
+            }
+
+            offenceCount = 0;
+
+            myState++;
+            offenceData.state = myState;
+            [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
+            [stateLabel setString: [NSString stringWithFormat:@"myState %d\nvsState %d", myState, vsState]];
+
+            [self setState:GS_WaitForDefence];
         }
-        updateSec += deltaTime;
+        shootSec -= deltaTime;
+        break;
+
+    case GS_WaitForDefence:
+       if(updateSec < 0) {
+            [countDown setScale:10 * (1-fmodf(updateSec, 1))];
+            [countDown setString:[NSString stringWithFormat:@"%d", 3-(int)updateSec]];
+
+            CGRect rect = timeGauge.textureRect;
+            CGSize size = timeGauge.texture.contentSize;
+            rect.size.width = size.width;
+            [timeGauge setTextureRect:rect];
+        }
+        else {
+            [self setState:GS_Defence];
+        }
+        break;
+
+    case GS_Defence:
+        if(updateSec < 5) {
+            float rate = 1 - (updateSec / 5.f);
+            CGRect rect = timeGauge.textureRect;
+            CGSize size = timeGauge.texture.contentSize;
+            rect.size.width = size.width * rate;
+            [timeGauge setTextureRect:rect];
+        }
+        else {            
+            [self setState:GS_WaitForOffence];
+        }
+        break;
     }
+    updateSec += deltaTime;
+    offenceSec += deltaTime;
+    defenceSec += deltaTime;
 }
 /*
 -(void) registerWithTouchDispatcher
@@ -330,32 +364,25 @@
             valid = YES;
         }
 
-        if(phase == 1) {
-            if(valid && shootSec < 0) {
-                CCSprite* sprite = [CCSprite spriteWithFile:@"Icon-72.png"];
-                AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
-                if(appCtrler.isRetina)
-                    [sprite setScale:2];
-                [sprite setPosition:screenPoint];
-//                [iconLayer addChild:sprite];
+        if(valid) {
+            if(state == GS_Offence) {
+                if(shootSec < 0) {
+                    CCSprite* sprite = [CCSprite spriteWithFile:@"Icon-72.png"];
+                    AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
+                    if(appCtrler.isRetina)
+                        [sprite setScale:2];
+                    [sprite setPosition:screenPoint];
 
-                SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec};
-                sendData.touches[sendData.tableSize] = sendTouch;
-                sendData.tableSize++;
+                    SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec};
+                    offenceData.touches[offenceData.tableSize] = sendTouch;
+                    offenceData.tableSize++;
 
-                [bullets addObject:[[ShootBullet alloc] initWithParamSend:updateSec touchPoint:screenPoint iconLayer:iconLayer]];
-                recieveTouchIndex++;
-
-                if(currentMatch == nil) {
-                    recieveData.touches[recieveData.tableSize] = sendTouch;
-                    recieveData.tableSize++;
+                    [offenceBullets addObject:[[ShootBullet alloc] initWithParamSend:updateSec touchPoint:screenPoint iconLayer:iconLayer]];
+                    touched = true;
                 }
-                touched = true;
             }
-        }
-        else if(phase == 4) {
-            if(valid) {
-                for(ShootBullet* bullet in bullets) {
+            else {
+                for(ShootBullet* bullet in defenceBullets) {
                     if([bullet touch:screenPoint])
                         break;
                 }
@@ -365,6 +392,49 @@
     if(touched)
         shootSec = INTERVAL_TIME;
 }
+
+-(void) setState:(enum GameState)state_ {
+    CGSize size = [[CCDirector sharedDirector] winSize];
+    updateSec = 0;
+
+    switch(state = state_) {
+    case GS_ModeSelect: 
+        {    
+            //
+            // Leaderboards and Achievements
+            //
+            
+            // Default font size will be 28 points.
+            float scale = (size.width / 768.f);
+            [CCMenuItemFont setFontSize:64 * scale];
+
+            CCMenuItem *itemSingle = [CCMenuItemFont itemWithString:@"Single Game" block:^(id offenceer) {
+                isOnline = NO;
+                [self removeChild: menuModeSelect cleanup:YES];
+                [self setState:GS_GameStart];
+            } ];
+            
+            CCMenuItem *itemOnline = [CCMenuItemFont itemWithString:@"Online Game" block:^(id offenceer) {
+                isOnline = YES;
+                [self requestMatch];
+
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"ブログ" message:@"確認ダイアログですよね？" delegate: self cancelButtonTitle:@"いいえ" otherButtonTitles:@"はい", nil];
+             
+                [alert show];
+                [alert release];                
+            } ];
+            
+            menuModeSelect = [CCMenu menuWithItems: itemSingle, itemOnline, nil];
+            [menuModeSelect setColor:ccBLACK];
+            [menuModeSelect alignItemsVerticallyWithPadding:16 * scale];
+            [menuModeSelect setPosition:ccp(size.width/2, size.height/2)];
+            // Add the menu to the layer
+            [self addChild:menuModeSelect z:10];
+        }
+        break;
+    }
+}
+
 
 #pragma mark GameKit delegate
 
@@ -489,7 +559,6 @@
     if (!matchStarted && match.expectedPlayerCount == 0) {
         matchStarted = YES;
         // ゲーム開始の処理
-        phase = 0;
         myState = 0;
         vsState = 0;
     }

@@ -12,7 +12,7 @@
 // When you import this file, you import all the cocos2d classes
 #import "cocos2d.h"
 
-#define SendTableMax 32
+#define SendTableMax 128
 
 typedef struct {
     float x;
@@ -61,14 +61,33 @@ typedef struct {
     CCSprite* lifeGauge;
     int myState;
     int vsState;
-    int phase;
     int life;
-    int recieveTouchIndex;
+    int defenceTouchIndex;
     float shootSec;
     float updateSec;
-    SendData sendData;
-    SendData recieveData;
-    NSMutableArray *bullets;
+    float offenceSec;
+    float defenceSec;
+    int offenceCount;
+    SendData offenceData;
+    SendData defenceData;
+    NSMutableArray *offenceBullets;
+    NSMutableArray *defenceBullets;
+
+    CCMenu* menuModeSelect;
+
+    BOOL isOnline;
+
+    enum GameState {
+        GS_ModeSelect,
+        GS_GameStart,
+        GS_WaitForOffence,
+        GS_Offence,
+        GS_WaitForDefence,
+        GS_Defence,
+        GS_GameEnd,
+        GS_Result,
+        GS_Max
+    } state;
 }
 
 // returns a CCScene that contains the HelloWorldLayer as the only child

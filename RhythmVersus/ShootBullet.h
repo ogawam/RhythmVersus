@@ -42,5 +42,6 @@
 -(id) initWithParamSend:(float)justTime_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
 -(BOOL) update:(float)time;
 -(BOOL) touch:(CGPoint)touchPos_;
+-(BOOL) isDestoyed;
 
 @end

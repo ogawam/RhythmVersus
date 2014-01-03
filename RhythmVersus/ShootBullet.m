@@ -106,7 +106,6 @@
 
             if(time - justTime > 2) {
                 [self destroy];
-                state = Max;
             }
         }
         break;
@@ -167,7 +166,6 @@
 
     case Damage:
         [self destroy];
-        state = Max;
         return YES;
         break;        
     }
@@ -178,7 +176,7 @@
     if(state == Recieve) {
         CGPoint vec = ccpSub(touchPos_, justPos);
         float j2u = updateTime - justTime;
-        if(abs(j2u) < (TARGET_DISP_TIME * 0.5f)
+        if(fabs(j2u) < (TARGET_DISP_TIME * 0.5f)
         && abs(vec.x) < 96 && abs(vec.y) < 96) 
         {
             NSLog(@"updateTime %f justTime %f", updateTime, justTime);
@@ -206,6 +204,10 @@
         }
     }
     state = Max;
+}
+
+-(BOOL) isDestoyed {
+    return (state == Max);
 }
 
 @end
