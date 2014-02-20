@@ -18,6 +18,7 @@ typedef struct {
     float x;
     float y;
     float sec;
+    float charge;
 } SendTouch;
 
 typedef struct {
@@ -25,6 +26,13 @@ typedef struct {
 	int tableSize;
     int state;
 } SendData;
+
+@interface TouchLog: NSObject {
+}
+-(id) initWithParam:(CGPoint)pos_ timestamp:(float)timestamp_;
+@property (assign) CGPoint pos;
+@property (assign) float timestamp;
+@end
 
 // MatchCallback
 @interface MatchCallback : NSObject <GKMatchDelegate> {
@@ -65,6 +73,7 @@ typedef struct {
     int defenceTouchIndex;
     float shootSec;
     float updateSec;
+    float rhythmSec;
     float offenceSec;
     float defenceSec;
     int offenceCount;
@@ -73,7 +82,12 @@ typedef struct {
     NSMutableArray *offenceBullets;
     NSMutableArray *defenceBullets;
 
+    NSMutableDictionary *touchLogs;
+
     CCMenu* menuModeSelect;
+
+    CCMotionStreak* rhythmLines[2];
+    int rhythmLineCount;
 
     BOOL isOnline;
 

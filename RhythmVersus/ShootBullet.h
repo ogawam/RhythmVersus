@@ -15,6 +15,7 @@
 // ShootBullet
 @interface ShootBullet : NSObject
 {
+    float beginTime;
     float justTime;
     float guardTime;
     float DamageTime;
@@ -26,20 +27,29 @@
     CGPoint justPos;
     CCLayer* parentLayer;
 
-    CCSprite* sprite[2];
-    CCSprite* target[2];
+    int spriteNum;
+
+    CCSprite* bulletSprites[2];
+    CCSprite* targetSprites[2];
+
+    NSMutableArray *effects;
 
     enum State {
-        Send,
-        Recieve,
-        Guard,
-        Damage,
-        Max
+        BS_Offence,
+        BS_Defence,
+        BS_Guard,
+        BS_Damage,
+        BS_Max
     } state;
+
+    enum Type {
+        BT_Normal,
+        BT_Snipe
+    } type;
 }
 
--(id) initWithParamRecieve:(float)justTime_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
--(id) initWithParamSend:(float)justTime_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
+-(id) initWithParamDefence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
+-(id) initWithParamOffence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
 -(BOOL) update:(float)time;
 -(BOOL) touch:(CGPoint)touchPos_;
 -(BOOL) isDestoyed;
