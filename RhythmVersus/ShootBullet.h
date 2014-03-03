@@ -28,6 +28,7 @@
     CCLayer* parentLayer;
 
     int spriteNum;
+    int damage;
 
     CCSprite* bulletSprites[2];
     CCSprite* targetSprites[2];
@@ -46,12 +47,20 @@
         BT_Normal,
         BT_Snipe
     } type;
+
+    enum Mode {
+        BM_None,
+        BM_Gather,
+    } mode;
 }
 
--(id) initWithParamDefence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
--(id) initWithParamOffence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
+-(id) initWithParamDefence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ shotMode:(enum Mode)mode_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
+-(id) initWithParamOffence:(float)beginTime_ justTime:(float)justTime_ shotType:(enum Type)type_ shotMode:(enum Mode)mode_ touchPoint:(CGPoint)justPos_ iconLayer:(CCLayer*)parentLayer_;
 -(BOOL) update:(float)time;
--(BOOL) touch:(CGPoint)touchPos_;
+-(void) setDamage:(int)damage_;
+-(int) getDamage;
+-(int) touch:(CGPoint)touchPos_;
 -(BOOL) isDestoyed;
+-(enum Type) getType;
 
 @end

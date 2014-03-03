@@ -19,12 +19,14 @@ typedef struct {
     float y;
     float sec;
     float charge;
+    int mode;
 } SendTouch;
 
 typedef struct {
 	SendTouch touches[SendTableMax];
 	int tableSize;
     int state;
+    int life;
 } SendData;
 
 @interface TouchLog: NSObject {
@@ -56,7 +58,7 @@ typedef struct {
 @interface HelloWorldLayer : CCLayer <GKAchievementViewControllerDelegate, GKLeaderboardViewControllerDelegate>
 {
     BOOL gameCenterAvailable;
-    NSError *error;
+    NSError *error_;
     GKMatch *currentMatch;
     MatchCallback *match_callback;
     BOOL matchStarted;
@@ -66,12 +68,17 @@ typedef struct {
     CCLabelTTF *stateLabel;
     CCLabelTTF *countDown;
     CCSprite* timeGauge;
-    CCSprite* lifeGauge;
-    int myState;
-    int vsState;
-    int life;
+    CCSprite* lifeGaugeL;
+    CCSprite* lifeGaugeR;
+    CCSprite* tensionGauge;
+    int myPhase;
+    int vsPhase;
+    int lifeL;
+    int lifeR;
+    int tension;
     int defenceTouchIndex;
     float shootSec;
+    float multiInputSec;
     float updateSec;
     float rhythmSec;
     float offenceSec;

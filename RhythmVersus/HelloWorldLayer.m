@@ -18,6 +18,7 @@
 
 #define RHYTHM_TIME 2.f
 #define INTERVAL_TIME 0.25f
+#define MULTI_INPUT_TIME 0.1f
 #define SNIPE_CHARGE_TIME 0.5f
 
 #define NORMAL_SPEED 2.f
@@ -69,19 +70,22 @@
 	if( (self=[super init]) ) {
 		
         gameCenterAvailable = NO;
-        error = nil;
+        error_ = nil;
         currentMatch = nil;
         matchStarted = NO;
         match_callback = [[MatchCallback alloc] init];
         updateSec = 0;
         offenceBullets = [[NSMutableArray alloc] init];
         defenceBullets = [[NSMutableArray alloc] init];
-        life = 100;
+        lifeL = 100;
+        lifeR = 100;
+        tension = 0;
 
         touchLogs = [[NSMutableDictionary alloc] init];
 
         offenceCount = 0;
         defenceSec = 5;
+        multiInputSec = 0;
 
         rhythmLineCount = 0;
 
@@ -105,11 +109,22 @@
         [lifeFrame setPosition:lfPosition];
         [self addChild:lifeFrame];
 
-        lifeGauge = [CCSprite spriteWithFile:@"rvLifeGauge.png"];
-        lfPosition.x -= lfTexRect.size.width/2;
-        [lifeGauge setPosition:lfPosition];
-        [lifeGauge setAnchorPoint:ccp(0,0.5f)];
-        [self addChild:lifeGauge];
+        CCSprite* versus = [CCSprite spriteWithFile:@"rvVersus.png"];        
+        CGRect vsTexRect = versus.textureRect;
+        [versus setPosition:lfPosition];
+        [self addChild:versus];
+
+        lifeGaugeL = [CCSprite spriteWithFile:@"rvLifeGaugeL.png"];
+        lfPosition.x -= vsTexRect.size.width/2;
+        [lifeGaugeL setPosition:lfPosition];
+        [lifeGaugeL setAnchorPoint:ccp(1,0.5f)];
+        [self addChild:lifeGaugeL];
+
+        lifeGaugeR = [CCSprite spriteWithFile:@"rvLifeGaugeR.png"];
+        lfPosition.x += vsTexRect.size.width;
+        [lifeGaugeR setPosition:lfPosition];
+        [lifeGaugeR setAnchorPoint:ccp(0,0.5f)];
+        [self addChild:lifeGaugeR];
 
         CCSprite* timeFrame = [CCSprite spriteWithFile:@"rvTimeFrame.png"];
         CGRect tfTexRect = timeFrame.textureRect;
@@ -122,6 +137,22 @@
         [timeGauge setPosition:tfPosition];
         [timeGauge setAnchorPoint:ccp(0,0.5f)];
         [self addChild:timeGauge];
+
+        CCSprite* tensionFrame = [CCSprite spriteWithFile:@"rvTimeFrame.png"];
+        tfTexRect = tensionFrame.textureRect;
+        tfPosition = ccp(size.width/2, tfTexRect.size.height * 2);
+        [tensionFrame setPosition:tfPosition];
+        [self addChild:tensionFrame];
+
+        tensionGauge = [CCSprite spriteWithFile:@"rvTensionGauge.png"];
+        tfPosition.x -= tfTexRect.size.width/2;
+        [tensionGauge setPosition:tfPosition];
+        [tensionGauge setAnchorPoint:ccp(0,0.5f)];
+
+        CGRect tgTexRect = tensionGauge.textureRect;
+        tgTexRect.size.width = 0;
+        [tensionGauge setTextureRect:tgTexRect];
+        [self addChild:tensionGauge];
 
         CCSprite *sprite = [CCSprite spriteWithFile:@"rhythmversus.png"];
         [sprite setPosition:ccp(size.width/2,size.height/2)];
@@ -168,7 +199,7 @@
 			
 			[leaderboardViewController release];
 		} ];
-*/
+
 		CCMenuItem *itemLogin = [CCMenuItemFont itemWithString:@"Login" block:^(id offenceer) {
             [self authenticateLocalPlayer];
         } ];
@@ -188,8 +219,8 @@
 		
 		// Add the menu to the layer
 		[self addChild:menu];
-
-        stateLabel = [CCLabelTTF labelWithString:[NSString stringWithFormat:@"myState %d\nvsState %d", myState, vsState] fontName:@"Arial Rounded MT Bold" fontSize:16];
+*/
+        stateLabel = [CCLabelTTF labelWithString:@"" fontName:@"Arial Rounded MT Bold" fontSize:16];
         [stateLabel setPosition:ccp(size.width / 2,16)];
         [stateLabel setAnchorPoint:ccp(0,0)];
         [self addChild:stateLabel];
@@ -223,36 +254,61 @@
     CGSize winSize = [[CCDirector sharedDirector] winSize];
     
     // 相手からの攻撃を受信する
-    if(match_callback.recieveTouched && defenceSec < 5) {
+    if(match_callback.recieveTouched) {
         match_callback.recieveTouched = NO;
 
         for(int i = 0; i < match_callback.recieveData.tableSize; ++i)
             defenceData.touches[defenceData.tableSize + i] = match_callback.recieveData.touches[i];
         defenceData.tableSize += match_callback.recieveData.tableSize;
 
-        vsState = match_callback.recieveData.state;
+        lifeR = match_callback.recieveData.life;
+        float rate = (lifeR / 100.f);
+        CGRect rect = lifeGaugeR.textureRect;
+        CGSize size = lifeGaugeR.texture.contentSize;
+        rect.size.width = size.width * rate;
+        rect.origin.x = size.width * (1 - rate);
+        [lifeGaugeR setTextureRect:rect];
+
+        vsPhase = max(vsPhase, match_callback.recieveData.state);
     }
 
-    // 相手からの攻撃を生成する
-    if(defenceData.tableSize > 0) {
-        while(defenceTouchIndex < defenceData.tableSize) {
+    [stateLabel setString: [NSString stringWithFormat:@"myPhase %d\nvsPhase %d", myPhase, vsPhase]];
 
+    // 相手からの攻撃を生成する
+    if(defenceSec < 5 && defenceData.tableSize > 0) {
+        while(defenceTouchIndex < defenceData.tableSize) {
+            SendTouch touch = defenceData.touches[defenceTouchIndex];
+
+            int damage = 10;
             float reachSec = NORMAL_SPEED;
             enum Type type = BT_Normal;
+            enum Mode mode = (enum Mode)touch.mode;
 
-            if(defenceData.touches[defenceTouchIndex].charge > SNIPE_CHARGE_TIME) {
+            if(touch.charge > SNIPE_CHARGE_TIME) {
+                damage += 40 * (touch.charge / 5);
                 reachSec = SNIPE_SPEED;
                 type = BT_Snipe;
             }
 
-            if(defenceSec >= defenceData.touches[defenceTouchIndex].sec - reachSec) {
+            if(defenceSec >= touch.sec - reachSec) {
                 float scale = 768;
-                CGPoint position = ccp(defenceData.touches[defenceTouchIndex].x, defenceData.touches[defenceTouchIndex].y);
+                CGPoint position = ccp(touch.x, touch.y);
                 position.x = winSize.width / 2 + position.x * scale;
                 position.y = winSize.height / 2 + position.y * scale;
 
-                [defenceBullets addObject:[[ShootBullet alloc] initWithParamDefence:defenceSec justTime:defenceData.touches[defenceTouchIndex].sec shotType:type touchPoint:position iconLayer:iconLayer]];
+                ShootBullet* bullet = [[ShootBullet alloc] initWithParamDefence:defenceSec justTime:touch.sec shotType:type shotMode:mode touchPoint:position iconLayer:iconLayer];
+                [bullet setDamage:damage];
+                [defenceBullets addObject:bullet];
                 defenceTouchIndex++;
+
+                lifeR -= 2;
+                lifeR = max(lifeR, 0);
+                float rate = (lifeR / 100.f);
+                CGRect rect = lifeGaugeR.textureRect;
+                CGSize size = lifeGaugeR.texture.contentSize;
+                rect.size.width = size.width * rate;
+                rect.origin.x = size.width * (1 - rate);
+                [lifeGaugeR setTextureRect:rect];
             }
             else break;
         }
@@ -261,14 +317,14 @@
     // 相手からの攻撃を更新する
     for(ShootBullet* bullet in defenceBullets) {
         if([bullet update:defenceSec]) {
-            life -= 10;
-            if(life < 0)
-                life = 100;
-            float rate = (life / 100.f);
-            CGRect rect = lifeGauge.textureRect;
-            CGSize size = lifeGauge.texture.contentSize;
+            lifeL -= [bullet getDamage];
+            if(lifeL < 0)
+                lifeL = 0;
+            float rate = (lifeL / 100.f);
+            CGRect rect = lifeGaugeL.textureRect;
+            CGSize size = lifeGaugeL.texture.contentSize;
             rect.size.width = size.width * rate;
-            [lifeGauge setTextureRect:rect];
+            [lifeGaugeL setTextureRect:rect];
             CCLayerColor* layerColor = [CCLayerColor layerWithColor:ccc4(255,0,0,128)];
             [layerColor runAction:[CCSequence actions:
                 [CCFadeTo actionWithDuration:0.25f opacity:0],
@@ -278,6 +334,10 @@
                 nil
             ]];
             [self addChild:layerColor];
+
+            offenceData.state = myPhase;
+            offenceData.life = lifeL;
+            [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
         }
     }
 
@@ -288,23 +348,22 @@
 
     switch(state) {
     case GS_GameStart: 
-        [self setState:GS_WaitForOffence];
+        if(myPhase == vsPhase && updateSec > 2)
+            [self setState:GS_WaitForOffence];
         break;
 
     case GS_WaitForOffence:
-        if(updateSec < 1) {
-
-            [countDown setScale:1 + 5 * (1-sinf(3.14f * 0.5f * fmin(1, updateSec / 0.5f)))];
-            [countDown setString:[NSString stringWithFormat:@"Offence Ready?"]];
-        }
-        else {
-            [countDown setScale:0];
-            offenceData.tableSize = 0;
-            defenceData.tableSize = 0;
-            defenceTouchIndex = 0;
-            shootSec = 0;
-            offenceSec = 0;
-            [self setState:GS_Offence];
+        if(myPhase == vsPhase && updateSec > 1) {
+            if(lifeL == 0 || lifeR == 0)
+                [self setState:GS_GameEnd];
+            else {
+                offenceData.life = lifeL;
+                defenceData.tableSize = 0;
+                defenceTouchIndex = 0;
+                shootSec = 0;
+                offenceSec = 0;
+                [self setState:GS_Offence];
+            }
         }
         break;
 
@@ -327,6 +386,8 @@
                     defenceData.tableSize += offenceData.tableSize;   
                 }
 
+                offenceData.state = myPhase;
+                offenceData.life = lifeL;
                 [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
                 offenceData.tableSize = 0;
             }
@@ -334,34 +395,41 @@
         else {
             defenceSec = -1;
 
+            myPhase++;
+
             if(!isOnline) {
                 for(int i = 0; i < offenceData.tableSize; ++i)
                     defenceData.touches[defenceData.tableSize + i] = offenceData.touches[i];
                 defenceData.tableSize += offenceData.tableSize;   
+                vsPhase++;
             }
 
             offenceCount = 0;
 
-            myState++;
-            offenceData.state = myState;
+            offenceData.state = myPhase;
+            offenceData.life = lifeL;
             [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
-            [stateLabel setString: [NSString stringWithFormat:@"myState %d\nvsState %d", myState, vsState]];
+            offenceData.tableSize = 0;
 
             [self setState:GS_WaitForDefence];
         }
 
         {
-            float rate = shootSec / INTERVAL_TIME;
             CGPoint pos;
             pos.x = (winSize.width-768)/2+ 768*rhythmSec/RHYTHM_TIME;
             pos.y = winSize.height/2;
+            float rate = shootSec / INTERVAL_TIME;
+            ccColor3B color = ccWHITE;
+
             if(rate > 0) {
                 pos.y += winSize.height/4 * (1-sinf(3.14/2 * (1-rate))) * sinf(3.14f * (rhythmSec / 0.05f));
+                color.g = color.b = 255 * (1-rate);
             }
-            rhythmLines[rhythmLineCount].color = ccc3(255, 255 * (1-rate), 255 * (1-rate));
 
             rhythmSec += deltaTime;
+            rhythmLines[rhythmLineCount].color = color;
             rhythmLines[rhythmLineCount].position = pos;
+
             if(rhythmSec > RHYTHM_TIME) {
                 rhythmSec -= RHYTHM_TIME;
                 rhythmLineCount++;
@@ -375,20 +443,20 @@
                 [gameLayer addChild:rhythmLines[rhythmLineCount]];
             }
         }
-        shootSec = max((shootSec - deltaTime), 0);
+        multiInputSec -= deltaTime;
+        shootSec -= deltaTime;
         break;
 
     case GS_WaitForDefence:
-       if(updateSec < 1) {
-            [countDown setScale:1 + 5 * (1-sinf(3.14f * 0.5f * fmin(1, updateSec / 0.5f)))];
-            [countDown setString:[NSString stringWithFormat:@"Defence Ready?"]];
+        if(myPhase == vsPhase && updateSec > 1) {
+            if(tension == 100) {
+                tension = 0;
+                CGRect rect = tensionGauge.textureRect;
+                CGSize size = tensionGauge.texture.contentSize;
+                rect.size.width = 0;
+                [tensionGauge setTextureRect:rect];                        
+            } 
 
-            CGRect rect = timeGauge.textureRect;
-            CGSize size = timeGauge.texture.contentSize;
-            rect.size.width = size.width;
-            [timeGauge setTextureRect:rect];
-        }
-        else {
             [countDown setScale:0];
             [self setState:GS_Defence];
         }
@@ -403,10 +471,19 @@
             [timeGauge setTextureRect:rect];
         }
         else {            
+            offenceData.tableSize = 0;
+            offenceData.state = myPhase;
+            offenceData.life = lifeL;
+            [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
             [self setState:GS_WaitForOffence];
         }
         break;
             
+    case GS_GameEnd: 
+        if(updateSec > 2)
+            [self setState:GS_ModeSelect];
+        break;
+
         default:
             break;
     }
@@ -431,19 +508,16 @@
 //    CGSize winSize = [[CCDirector sharedDirector] winSize];
 
     for (UITouch *touch in touches) {
-        NSLog(@"touch.timestamp %d", (int)touch.timestamp);
-//        touchBeganTimes[touch.tapCount] = touch.timestamp;
         id touchLog = [[TouchLog alloc] initWithParam:[touch locationInView:[touch view]] timestamp:touch.timestamp];
         [touchLogs setObject:touchLog forKey:[[NSString alloc] initWithFormat:@"%d",touch.hash]];
     }
-    NSLog(@"touchLogs count %d", touchLogs.count);
 }
 
 - (void)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
     CGSize winSize = [[CCDirector sharedDirector] winSize];
 
-    bool touched = false;
+    int touchNum = 0;
     for (UITouch *touch in touches) {
         CGPoint touchPoint = [touch locationInView:[touch view]];
         TouchLog* touchLog = [touchLogs valueForKey:[[NSString alloc] initWithFormat:@"%d",touch.hash]];
@@ -467,11 +541,16 @@
 
         if(valid) {
             if(state == GS_Offence) {
-                if(shootSec <= 0) {
+                if(multiInputSec > 0 || shootSec < 0) {
                     rhythmLines[rhythmLineCount].color = ccRED;
+
+                    enum Mode mode = BM_None;
+                    if(tension == 100)
+                        mode = BM_Gather;
                     
-                    SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec, touchSec};
+                    SendTouch sendTouch = {touchPoint.x, touchPoint.y, updateSec, touchSec, mode};
                     offenceData.touches[offenceData.tableSize] = sendTouch;
+                    offenceData.state = myPhase;
                     offenceData.tableSize++;
 
                     float reachSec = NORMAL_SPEED;
@@ -481,22 +560,32 @@
                         type = BT_Snipe;
                     }
 
-                    [offenceBullets addObject:[[ShootBullet alloc] initWithParamOffence:updateSec justTime:updateSec + reachSec shotType:type touchPoint:screenPoint iconLayer:iconLayer]];
-                    touched = true;
+                    [offenceBullets addObject:[[ShootBullet alloc] initWithParamOffence:updateSec justTime:updateSec + reachSec shotType:type shotMode:mode touchPoint:screenPoint iconLayer:iconLayer]];
+                    touchNum++;
                 }
             }
             else {
                 for(ShootBullet* bullet in defenceBullets) {
-                    if([bullet touch:screenPoint])
+                    int prise = [bullet touch:screenPoint];
+                    if(prise > 0) {
+                        tension = min(tension + prise, 100);
+                        CGRect rect = tensionGauge.textureRect;
+                        CGSize size = tensionGauge.texture.contentSize;
+                        rect.size.width = size.width * (tension / 100.f);
+                        [tensionGauge setTextureRect:rect];                        
                         break;
+                    }
                 }
             }
         }
     }
 
-    if(touched)
-        shootSec = INTERVAL_TIME;
-    NSLog(@"touchLogs count %d", touchLogs.count);
+    if(touchNum > 0) {
+        if(multiInputSec < 0)
+            multiInputSec = MULTI_INPUT_TIME;
+        shootSec = max(shootSec, 0) + INTERVAL_TIME * touchNum;
+    }
+//    NSLog(@"touchLogs count %d", touchLogs.count);
 }
 
 - (void)ccTouchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
@@ -504,10 +593,13 @@
     for (UITouch *touch in touches) {
         [touchLogs removeObjectForKey:[[NSString alloc] initWithFormat:@"%d",touch.hash]];
     }
-    NSLog(@"touchLogs count %d", touchLogs.count);
+//    NSLog(@"touchLogs count %d", touchLogs.count);
 }
 
 -(void) setState:(enum GameState)state_ {
+    AppController *appCtrler = (AppController*) [[UIApplication sharedApplication] delegate];
+    float scaleBase = appCtrler.isRetina ? 2: 1;
+
     CGSize size = [[CCDirector sharedDirector] winSize];
     updateSec = 0;
 
@@ -529,7 +621,6 @@
             } ];
             
             CCMenuItem *itemOnline = [CCMenuItemFont itemWithString:@"Online Game" block:^(id offenceer) {
-                isOnline = YES;
                 [self requestMatch];
 /*
                 UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"ブログ" message:@"確認ダイアログですよね？" delegate: self cancelButtonTitle:@"いいえ" otherButtonTitles:@"はい", nil];
@@ -539,7 +630,34 @@
 */
             } ];
             
-            menuModeSelect = [CCMenu menuWithItems: itemSingle, itemOnline, nil];
+            CCMenuItem *itemRematch = [CCMenuItemFont itemWithString:@"Rematch" block:^(id offenceer) {
+                if(isOnline) {
+                    offenceData.tableSize = 0;
+                    offenceData.state = 0;
+                    offenceData.life = 100;
+                    myPhase = 0;
+                    vsPhase = -1;
+                    [self sendDataToAllPlayers: &offenceData sizeInBytes:sizeof(SendData)];
+                    [self removeChild: menuModeSelect cleanup:YES];
+                    [self setState:GS_GameStart];                    
+                }
+                else {
+                    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"確認" message:@"オンライン対戦後に選択して下さい" delegate: self cancelButtonTitle:@"" otherButtonTitles:@"OK", nil];
+                 
+                    [alert show];
+                    [alert release];                
+                }
+            } ];
+
+            CCMenuItem *itemAutoMatch = [CCMenuItemFont itemWithString:@"AutoMatch" block:^(id offenceer) {
+                [self findProgrammaticMatch: self];
+            } ];
+
+            CCMenuItem *itemAutoMatchCancel = [CCMenuItemFont itemWithString:@"AutoMatchCancel" block:^(id offenceer) {
+                [[GKMatchmaker sharedMatchmaker] cancel];
+            } ];
+
+            menuModeSelect = [CCMenu menuWithItems: itemSingle, itemOnline, itemRematch, itemAutoMatch, itemAutoMatchCancel, nil];
             [menuModeSelect setColor:ccBLACK];
             [menuModeSelect alignItemsVerticallyWithPadding:16 * scale];
             [menuModeSelect setPosition:ccp(size.width/2, size.height/2)];
@@ -547,6 +665,65 @@
             [self addChild:menuModeSelect z:10];
         }
         break;
+
+    case GS_GameStart:
+        {
+            lifeL = 100;
+            CGRect rect = lifeGaugeL.textureRect;
+            CGSize size = lifeGaugeL.texture.contentSize;
+            rect.size.width = size.width;
+            [lifeGaugeL setTextureRect:rect];
+
+            lifeR = 100;
+            rect = lifeGaugeR.textureRect;
+            size = lifeGaugeR.texture.contentSize;
+            rect.size.width = size.width;
+            rect.origin.x = 0;
+            [lifeGaugeR setTextureRect:rect];
+
+            tension = 0;
+            rect = tensionGauge.textureRect;
+            size = tensionGauge.texture.contentSize;
+            rect.size.width = size.width * (tension / 100.f);
+            [tensionGauge setTextureRect:rect];                        
+        }
+
+        [countDown setString:[NSString stringWithFormat:@"Sound your Beats!"]];
+        [countDown setScale:scaleBase];
+        [countDown setOpacity: 255];
+        [countDown stopAllActions];
+        [countDown runAction:
+            [CCSpawn actions:
+                [CCEaseOut actionWithAction: 
+                    [CCScaleTo actionWithDuration:2.f scale: scaleBase * 2 ] rate:2 
+                ],
+                [CCFadeTo actionWithDuration:2.f opacity: 0],
+                nil
+            ]
+        ];
+        break;
+
+    case GS_WaitForOffence:
+        {
+            CGRect rect = timeGauge.textureRect;
+            CGSize size = timeGauge.texture.contentSize;
+            rect.size.width = size.width;
+            [timeGauge setTextureRect:rect];
+        }
+        [countDown setString:[NSString stringWithFormat:@"Offence Ready?"]];
+        [countDown setScale:scaleBase * 3];
+        [countDown setOpacity: 255];
+        [countDown stopAllActions];
+        [countDown runAction:
+            [CCSequence actions:
+                [CCEaseOut actionWithAction: 
+                    [CCScaleTo actionWithDuration:0.75f scale: scaleBase ] rate:2 
+                ],
+                [CCFadeTo actionWithDuration:0.25f opacity: 0],
+                nil
+            ]
+        ];
+        break;    
 
     case GS_Offence:
         rhythmLines[rhythmLineCount] = [CCMotionStreak streakWithFade:RHYTHM_TIME minSeg:8 width:8 color:ccWHITE textureFilename:@"rvCenterLine.png"];
@@ -556,6 +733,27 @@
         break;
 
     case GS_WaitForDefence:
+        {
+            CGRect rect = timeGauge.textureRect;
+            CGSize size = timeGauge.texture.contentSize;
+            rect.size.width = size.width;
+            [timeGauge setTextureRect:rect];
+        }
+
+        [countDown setString:[NSString stringWithFormat:@"Defence Ready?"]];
+        [countDown setScale:scaleBase * 3];
+        [countDown setOpacity: 255];
+        [countDown stopAllActions];
+        [countDown runAction:
+            [CCSequence actions:
+                [CCEaseOut actionWithAction: 
+                    [CCScaleTo actionWithDuration:0.75f scale: scaleBase ] rate:2 
+                ],
+                [CCFadeTo actionWithDuration:0.25f opacity: 0],
+                nil
+            ]
+        ];
+
         for(int i = 0; i < 2; ++i) {
             if(rhythmLines[i] != nil) {
                 [gameLayer removeChild: rhythmLines[i] cleanup:YES];
@@ -564,8 +762,30 @@
         }
         rhythmLineCount = 0;
         break;
-        default:
-            break;
+
+    case GS_GameEnd:
+        if(lifeL == 0)
+            if(lifeR == 0)
+                [countDown setString:[NSString stringWithFormat:@"Draw"]];
+            else [countDown setString:[NSString stringWithFormat:@"Lose"]];
+        else [countDown setString:[NSString stringWithFormat:@"Win"]];
+
+        [countDown setScale:scaleBase];
+        [countDown setOpacity: 255];
+        [countDown stopAllActions];
+        [countDown runAction:
+            [CCSpawn actions:
+                [CCEaseOut actionWithAction: 
+                    [CCScaleTo actionWithDuration:2.f scale: scaleBase * 2 ] rate:2 
+                ],
+                [CCFadeTo actionWithDuration:2.f opacity: 0],
+                nil
+            ]
+        ];        
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -600,11 +820,13 @@
         {
             localPlayer.authenticateHandler = ^(UIViewController* ui, NSError* _error )
             {
-                self->error = _error;
+                self->error_ = _error;
                 
                 if (_error == nil) {
                     // ゲーム招待を処理するためのハンドラを設定する
                     [self initMatchInviteHandler];
+                    
+                    [self findProgrammaticMatch:self];
                 }
             };
         }
@@ -659,11 +881,6 @@
         GKMatchRequest *request = [[[GKMatchRequest alloc] init] autorelease];
         request.minPlayers = 2;
         request.maxPlayers = 2;
-        life = 100;
-        CGRect rect = lifeGauge.textureRect;
-        CGSize size = lifeGauge.texture.contentSize;
-        rect.size.width = size.width;
-        [lifeGauge setTextureRect:rect];
         matchStarted = NO;
         [self showMatchmakerWithRequest:request];
     }
@@ -681,20 +898,59 @@
     // Display the error to the user.
 }
 
+- (IBAction)findProgrammaticMatch: (id) sender
+{
+    GKMatchRequest *request = [[[GKMatchRequest alloc] init] autorelease];
+    request.minPlayers = 2;
+    request.maxPlayers = 2;
+    [[GKMatchmaker sharedMatchmaker] findMatchForRequest:request
+        withCompletionHandler:^(GKMatch *match, NSError *error) {
+            if (error != nil)
+            {
+             // エラー処理
+            }
+            else if (match != nil)
+            {
+                // matchを保持させる
+                [match retain];
+                self->currentMatch = match; // 保持用のプロパティを使用して対戦を保持する
+                match.delegate = self->match_callback;
+
+                if (!matchStarted && match.expectedPlayerCount == 0)　{
+                    matchStarted = YES;
+                    isOnline = YES;
+
+                    // ゲーム開始の処理
+                    myPhase = 0;
+                    vsPhase = 0;
+
+                    [self removeChild: menuModeSelect cleanup:YES];
+                    [self setState: GS_GameStart];
+
+                     // 対戦開始に当たって必要な、ゲーム固有のコードをここに記述する
+                }
+            }
+        }
+    ];
+}
+
 - (void)matchmakerViewController:(GKMatchmakerViewController *)viewController didFindMatch:(GKMatch *)match
 {
+    // ダイアログをアニメーション(YES)で閉じる
     [[CCDirector sharedDirector] dismissModalViewControllerAnimated:YES];
+
+    // matchを保持させる
     [match retain];
     self->currentMatch = match;
-    match.delegate=self->match_callback;
-    NSLog(@"currentMatch address %@", self->currentMatch);
-    
+    match.delegate = self->match_callback;
+
     // 全ユーザが揃ったかどうか
     if (!matchStarted && match.expectedPlayerCount == 0) {
         matchStarted = YES;
+        isOnline = YES;
         // ゲーム開始の処理
-        myState = 0;
-        vsState = 0;
+        myPhase = 0;
+        vsPhase = 0;
 
         [self removeChild: menuModeSelect cleanup:YES];
         [self setState: GS_GameStart];
@@ -707,12 +963,13 @@
         NSError *_error = nil;
         NSData *packetData = [NSData dataWithBytes:data length:sizeInBytes];
         [self->currentMatch sendDataToAllPlayers:packetData withDataMode:GKMatchSendDataUnreliable error:&_error];
-        self->error = _error;
-        if(self->error != nil) {
+        self->error_ = _error;
+        if(self->error_ != nil) {
             NSLog(@"self->error");
         }
     }
 }
+
 @end
 
 // MatchCallback implementation

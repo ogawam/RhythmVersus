@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		DD5781101872350D009F9CBB /* rvBulletNormalBody.png in Resources */ = {isa = PBXBuildFile; fileRef = DD57810E1872350D009F9CBB /* rvBulletNormalBody.png */; };
 		DD5781111872350D009F9CBB /* rvBulletNormalWind.png in Resources */ = {isa = PBXBuildFile; fileRef = DD57810F1872350D009F9CBB /* rvBulletNormalWind.png */; };
+		DD66F20018970C41008E480A /* rvTensionGauge.png in Resources */ = {isa = PBXBuildFile; fileRef = DD66F1FF18970C41008E480A /* rvTensionGauge.png */; };
+		DD66F2031897FABE008E480A /* rvLifeGaugeR.png in Resources */ = {isa = PBXBuildFile; fileRef = DD66F2011897FABE008E480A /* rvLifeGaugeR.png */; };
+		DD66F2041897FABE008E480A /* rvVersus.png in Resources */ = {isa = PBXBuildFile; fileRef = DD66F2021897FABE008E480A /* rvVersus.png */; };
 		DD70B0CF1870667D00921B91 /* rvShotNormal.png in Resources */ = {isa = PBXBuildFile; fileRef = DD70B0CE1870667D00921B91 /* rvShotNormal.png */; };
 		DD872CCE1849D4F3007CFA67 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD872CCD1849D4F3007CFA67 /* QuartzCore.framework */; };
 		DD872CD01849D4F3007CFA67 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DD872CCF1849D4F3007CFA67 /* OpenGLES.framework */; };
@@ -136,16 +139,21 @@
 		DD872E591849D4F5007CFA67 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E581849D4F5007CFA67 /* AppDelegate.m */; };
 		DD872E5C1849D4F5007CFA67 /* HelloWorldLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E5B1849D4F5007CFA67 /* HelloWorldLayer.m */; };
 		DD872E5F1849D4F5007CFA67 /* IntroLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = DD872E5E1849D4F5007CFA67 /* IntroLayer.m */; };
-		DDA7024018678D8700F600A5 /* rvLifeGauge.png in Resources */ = {isa = PBXBuildFile; fileRef = DDA7023F18678D8700F600A5 /* rvLifeGauge.png */; };
+		DDA2764C18948D900078B532 /* rvPraise.png in Resources */ = {isa = PBXBuildFile; fileRef = DDA2764B18948D900078B532 /* rvPraise.png */; };
+		DDA7024018678D8700F600A5 /* rvLifeGaugeL.png in Resources */ = {isa = PBXBuildFile; fileRef = DDA7023F18678D8700F600A5 /* rvLifeGaugeL.png */; };
 		DDA702431867D7FE00F600A5 /* ShootBullet.m in Sources */ = {isa = PBXBuildFile; fileRef = DDA702421867D7FE00F600A5 /* ShootBullet.m */; };
 		DDC307D3185FF67900387A05 /* rhythmversus.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D2185FF67900387A05 /* rhythmversus.png */; };
 		DDC307D618635A1F00387A05 /* rvTimeFrame.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D418635A1E00387A05 /* rvTimeFrame.png */; };
 		DDC307D718635A1F00387A05 /* rvTimeGauge.png in Resources */ = {isa = PBXBuildFile; fileRef = DDC307D518635A1E00387A05 /* rvTimeGauge.png */; };
+		DDCEDCB5187A1EF20094E597 /* rvCenterLine.png in Resources */ = {isa = PBXBuildFile; fileRef = DDCEDCB4187A1EF20094E597 /* rvCenterLine.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		DD57810E1872350D009F9CBB /* rvBulletNormalBody.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvBulletNormalBody.png; path = Resources/rvBulletNormalBody.png; sourceTree = "<group>"; };
 		DD57810F1872350D009F9CBB /* rvBulletNormalWind.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvBulletNormalWind.png; path = Resources/rvBulletNormalWind.png; sourceTree = "<group>"; };
+		DD66F1FF18970C41008E480A /* rvTensionGauge.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvTensionGauge.png; path = Resources/rvTensionGauge.png; sourceTree = "<group>"; };
+		DD66F2011897FABE008E480A /* rvLifeGaugeR.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvLifeGaugeR.png; path = Resources/rvLifeGaugeR.png; sourceTree = "<group>"; };
+		DD66F2021897FABE008E480A /* rvVersus.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvVersus.png; path = Resources/rvVersus.png; sourceTree = "<group>"; };
 		DD70B0CE1870667D00921B91 /* rvShotNormal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvShotNormal.png; path = Resources/rvShotNormal.png; sourceTree = "<group>"; };
 		DD872CCA1849D4F3007CFA67 /* RhythmVersus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RhythmVersus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD872CCD1849D4F3007CFA67 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
@@ -409,12 +417,14 @@
 		DD872E5B1849D4F5007CFA67 /* HelloWorldLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HelloWorldLayer.m; sourceTree = "<group>"; };
 		DD872E5D1849D4F5007CFA67 /* IntroLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IntroLayer.h; sourceTree = "<group>"; };
 		DD872E5E1849D4F5007CFA67 /* IntroLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IntroLayer.m; sourceTree = "<group>"; };
-		DDA7023F18678D8700F600A5 /* rvLifeGauge.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvLifeGauge.png; path = Resources/rvLifeGauge.png; sourceTree = "<group>"; };
+		DDA2764B18948D900078B532 /* rvPraise.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvPraise.png; path = Resources/rvPraise.png; sourceTree = "<group>"; };
+		DDA7023F18678D8700F600A5 /* rvLifeGaugeL.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvLifeGaugeL.png; path = Resources/rvLifeGaugeL.png; sourceTree = "<group>"; };
 		DDA702411867D7FE00F600A5 /* ShootBullet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShootBullet.h; sourceTree = "<group>"; };
 		DDA702421867D7FE00F600A5 /* ShootBullet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ShootBullet.m; sourceTree = "<group>"; };
 		DDC307D2185FF67900387A05 /* rhythmversus.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rhythmversus.png; path = Resources/rhythmversus.png; sourceTree = "<group>"; };
 		DDC307D418635A1E00387A05 /* rvTimeFrame.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvTimeFrame.png; path = Resources/rvTimeFrame.png; sourceTree = "<group>"; };
 		DDC307D518635A1E00387A05 /* rvTimeGauge.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvTimeGauge.png; path = Resources/rvTimeGauge.png; sourceTree = "<group>"; };
+		DDCEDCB4187A1EF20094E597 /* rvCenterLine.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rvCenterLine.png; path = Resources/rvCenterLine.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -491,10 +501,15 @@
 		DD872CE01849D4F3007CFA67 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				DD66F1FF18970C41008E480A /* rvTensionGauge.png */,
+				DDA2764B18948D900078B532 /* rvPraise.png */,
+				DDCEDCB4187A1EF20094E597 /* rvCenterLine.png */,
 				DD57810E1872350D009F9CBB /* rvBulletNormalBody.png */,
 				DD57810F1872350D009F9CBB /* rvBulletNormalWind.png */,
 				DD70B0CE1870667D00921B91 /* rvShotNormal.png */,
-				DDA7023F18678D8700F600A5 /* rvLifeGauge.png */,
+				DDA7023F18678D8700F600A5 /* rvLifeGaugeL.png */,
+				DD66F2011897FABE008E480A /* rvLifeGaugeR.png */,
+				DD66F2021897FABE008E480A /* rvVersus.png */,
 				DDC307D418635A1E00387A05 /* rvTimeFrame.png */,
 				DDC307D518635A1E00387A05 /* rvTimeGauge.png */,
 				DDC307D2185FF67900387A05 /* rhythmversus.png */,
@@ -916,15 +931,20 @@
 				DD872CF01849D4F3007CFA67 /* Icon-Small.png in Resources */,
 				DD872CE41849D4F3007CFA67 /* Default-Landscape~ipad.png in Resources */,
 				DDC307D718635A1F00387A05 /* rvTimeGauge.png in Resources */,
-				DDA7024018678D8700F600A5 /* rvLifeGauge.png in Resources */,
+				DDA7024018678D8700F600A5 /* rvLifeGaugeL.png in Resources */,
 				DD872CF41849D4F3007CFA67 /* Icon.png in Resources */,
 				DD872CEE1849D4F3007CFA67 /* Icon-Small-50.png in Resources */,
+				DDCEDCB5187A1EF20094E597 /* rvCenterLine.png in Resources */,
+				DDA2764C18948D900078B532 /* rvPraise.png in Resources */,
 				DD70B0CF1870667D00921B91 /* rvShotNormal.png in Resources */,
 				DD872CF21849D4F3007CFA67 /* Icon-Small@2x.png in Resources */,
+				DD66F20018970C41008E480A /* rvTensionGauge.png in Resources */,
 				DDC307D3185FF67900387A05 /* rhythmversus.png in Resources */,
 				DD872CF61849D4F3007CFA67 /* Icon@2x.png in Resources */,
 				DD872CE21849D4F3007CFA67 /* Default.png in Resources */,
+				DD66F2031897FABE008E480A /* rvLifeGaugeR.png in Resources */,
 				DDC307D618635A1F00387A05 /* rvTimeFrame.png in Resources */,
+				DD66F2041897FABE008E480A /* rvVersus.png in Resources */,
 				DD5781111872350D009F9CBB /* rvBulletNormalWind.png in Resources */,
 				DD872CF91849D4F3007CFA67 /* iTunesArtwork in Resources */,
 				DD872E371849D4F5007CFA67 /* ChangeLog in Resources */,
